@@ -20,21 +20,21 @@ horse = pygame.image.load(r"Sprites\horse.png")
 
 # pieces on board
 boardPieces = [["r", "h", "b", "q", "k", "b", "h", "r"],
-               ["p", "p", "p", "p", "p", "p", "p", "p"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["o", "o", "o", "h", "o", "o", "o", "o"],
+               ["p", "p", "p", "p", "o", "p", "p", "p"],
+               ["o", "o", "o", "o", "o", "o", "k", "o"],
+               ["o", "o", "o", "h", "o", "o", "k", "o"],
                ["o", "q", "o", "h", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
+               ["o", "o", "o", "o", "o", "k", "o", "o"],
                ["p", "p", "p", "p", "p", "p", "p", "p"],
                ["r", "h", "b", "k", "q", "b", "h", "r"]]
 
 # board to indicate each player
 boardPlayer = [["2", "2", "2", "2", "2", "2", "2", "2"],
-               ["2", "2", "2", "2", "2", "2", "2", "2"],
-               ["0", "0", "0", "0", "0", "0", "0", "0"],
-               ["0", "0", "0", "1", "0", "0", "0", "0"],
+               ["2", "2", "2", "2", "0", "2", "2", "2"],
+               ["0", "0", "0", "0", "0", "0", "1", "0"],
+               ["0", "0", "0", "1", "0", "0", "1", "0"],
                ["0", "1", "0", "1", "0", "0", "0", "0"],
-               ["0", "0", "0", "0", "0", "0", "0", "0"],
+               ["0", "0", "0", "0", "0", "1", "0", "0"],
                ["1", "1", "1", "1", "1", "1", "1", "1"],
                ["1", "1", "1", "1", "1", "1", "1", "1"]]
 
@@ -223,12 +223,34 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos):
             for c in [-1, 1]:
                 if moveValid([j + c, i + 2 * k], boardPlayer) == 0:
                     boardMarker[j + c][i + 2 * k] = 3
-                if moveValid([j + c, i + 2 * k], boardPlayer) == 2:
+                elif moveValid([j + c, i + 2 * k], boardPlayer) == 2:
                     boardMarker[j + c][i + 2 * k] = 4
 
     elif piece == "q":
         rookOption(boardPieces, boardMarker, boardPlayer, tilePos)
         bishopOption(boardPieces, boardMarker, boardPlayer, tilePos)
+
+    elif piece == "k":
+        for k in [0, 1]:
+            if moveValid([j - 1, i + k], boardPlayer) == 0:
+                boardMarker[j - 1][i + k] = 3
+            elif moveValid([j - 1, i + k], boardPlayer) == 2:
+                boardMarker[j - 1][i + k] = 4
+        for k in [0, 1]:
+            if moveValid([j + k, i + 1], boardPlayer) == 0:
+                boardMarker[j + k][i + 1] = 3
+            elif moveValid([j + k, i + 1], boardPlayer) == 2:
+                boardMarker[j + k][i + 1] = 4
+        for k in [0, -1]:
+            if moveValid([j + 1, i + k], boardPlayer) == 0:
+                boardMarker[j + 1][i + k] = 3
+            elif moveValid([j + 1, i + k], boardPlayer) == 2:
+                boardMarker[j + 1][i + k] = 4
+        for k in [0, -1]:
+            if moveValid([j + k, i - 1], boardPlayer) == 0:
+                boardMarker[j + k][i - 1] = 3
+            if moveValid([j + k, i - 1], boardPlayer) == 2:
+                boardMarker[j + k][i - 1] = 4
 
 
 
