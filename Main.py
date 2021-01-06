@@ -22,8 +22,8 @@ horse = pygame.image.load(r"Sprites\horse.png")
 boardPieces = [["r", "h", "b", "q", "k", "b", "h", "r"],
                ["p", "p", "p", "p", "p", "p", "p", "p"],
                ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
+               ["o", "o", "o", "h", "o", "o", "o", "o"],
+               ["o", "q", "o", "h", "o", "o", "o", "o"],
                ["o", "o", "o", "o", "o", "o", "o", "o"],
                ["p", "p", "p", "p", "p", "p", "p", "p"],
                ["r", "h", "b", "k", "q", "b", "h", "r"]]
@@ -32,13 +32,14 @@ boardPieces = [["r", "h", "b", "q", "k", "b", "h", "r"],
 boardPlayer = [["2", "2", "2", "2", "2", "2", "2", "2"],
                ["2", "2", "2", "2", "2", "2", "2", "2"],
                ["0", "0", "0", "0", "0", "0", "0", "0"],
-               ["0", "0", "0", "0", "0", "0", "0", "0"],
-               ["0", "0", "0", "0", "0", "0", "0", "0"],
+               ["0", "0", "0", "1", "0", "0", "0", "0"],
+               ["0", "1", "0", "1", "0", "0", "0", "0"],
                ["0", "0", "0", "0", "0", "0", "0", "0"],
                ["1", "1", "1", "1", "1", "1", "1", "1"],
                ["1", "1", "1", "1", "1", "1", "1", "1"]]
 
-boardTiles = [] # will consist of board. but each element is a list in this format: [rect for tile, tile colour marker]
+boardRects = [] # a board of rects for each tile
+boardMarker = [] # a board with numbers corresponding to the colour of the tile
 boardStart = (45, 20) # top left corner of board
 tileSize = 32
 borderSize = 4
@@ -51,28 +52,38 @@ darkBrown = (142, 90, 0)
 cream = (252, 214, 112)
 lightGreen = (174, 255, 144)
 darkGreen = (61, 233, 71)
+lightRed = (255, 84, 84)
 
-# fills boardTiles
-# each element is a list in this format: [rect for tile, tile colour marker]
+
+global moving
+moving = False
+
+# fills boardMarker and boardRects
 for j in range(8):
     row = []
+    row1 = []
     for i in range(8):
-        row.append(
-            [pygame.Rect(i * tileSize, j * tileSize, tileSize, tileSize), (i + j) % 2])
-    boardTiles.append(row)
+        row.append(pygame.Rect(i * tileSize, j * tileSize, tileSize, tileSize))
+        row1.append((i + j) % 2)
+    boardRects.append(row)
+    boardMarker.append((row1))
+    
 
 # darws board
-def drawBoard(boardTiles):
-    for j in range(len(boardTiles)):
-        for i in range(len(boardTiles[0])):
-            if boardTiles[j][i][1] == 0: # white tile
-                pygame.draw.rect(display, cream, boardTiles[j][i][0])
-            elif boardTiles[j][i][1] == 1: # black tile
-                pygame.draw.rect(display, brown, boardTiles[j][i][0])
-            elif boardTiles[j][i][1] == 2: # tile where the cursor is on
-                pygame.draw.rect(display, lightGreen, boardTiles[j][i][0])
-            elif boardTiles[j][i][1] == 3: # tile where cursor has been clicked
-                pygame.draw.rect(display, darkGreen, boardTiles[j][i][0])
+def drawBoard(boardRects, boardMarker):
+    for j in range(8):
+        for i in range(8):
+            if boardMarker[j][i] == 0: # white tile
+                pygame.draw.rect(display, cream, boardRects[j][i])
+            elif boardMarker[j][i] == 1: # black tile
+                pygame.draw.rect(display, brown, boardRects[j][i])
+            elif boardMarker[j][i] == 2: # tile where the cursor is on
+                pygame.draw.rect(display, darkGreen, boardRects[j][i])
+            elif boardMarker[j][i] == 3: # tile where cursor has been clicked
+                pygame.draw.rect(display, lightGreen, boardRects[j][i])
+                pygame.draw.rect(display, darkGreen, boardRects[j][i], 1)
+            elif boardMarker[j][i] == 4: # tile where the cursor is on
+                pygame.draw.rect(display, lightRed, boardRects[j][i])
 
     # border of the board
     pygame.draw.rect(display, darkBrown, pygame.Rect(0, 0, tileSize * 8, tileSize * 8), borderSize)
@@ -95,24 +106,137 @@ def drawPieces(boardPieces):
                 display.blit(king, [i * tileSize, j * tileSize])
 
 # changes the colour indication for the tile where the cursor is on
-def cursor(loc, tileSize, boardStart, boardTiles, click):
+def cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click):
     mx = loc[0] - boardStart[0]
     my = loc[1] - boardStart[1]
+    global moving
 
-    for j in range(8):
-        for i in range(8):
-            boardTiles[j][i][1] = (i + j) % 2
+    if not moving:
+        for j in range(8): # resets the colour marker for all tiles
+            for i in range(8):
+                boardMarker[j][i] = (i + j) % 2
 
-    for j in range(0, tileSize * 8, tileSize):
-        if my >= j and my <= j + tileSize:
-            for i in range(0, tileSize * 8, tileSize):
-                if mx >= i and mx <= i + tileSize:
-                    if click == 0:
-                        boardTiles[j // tileSize][i // tileSize][1] = 2
-                    elif click == 1:
-                        boardTiles[j // tileSize][i // tileSize][1] = 3
+        for j in range(0, tileSize * 8, tileSize):
+            if my >= j and my <= j + tileSize:
+                for i in range(0, tileSize * 8, tileSize):
+                    if mx >= i and mx <= i + tileSize:
+                        if click == 0:
 
-    return boardTiles
+                            boardMarker[j // tileSize][i // tileSize] = 2 # makes tiles light green
+                        elif click == 1:
+                            moving = True
+                            boardMarker[j // tileSize][i // tileSize] = 3 # makes tiles dark green
+                            boardMarker = moveOption(boardPieces, boardMarker, boardPlayer, (j // tileSize, i // tileSize))
+
+    return boardMarker
+
+def moveValid(tilePos, boardPlayer):
+    if tilePos[0] < 0 or tilePos[0] > 7:
+        return 1 # out of the board
+    if tilePos[1] < 0 or tilePos[1] > 7:
+        return 1 # out of the board
+    if boardPlayer[tilePos[0]][tilePos[1]] == "2":
+        return 2 # enemy piece
+    if boardPlayer[tilePos[0]][tilePos[1]] == "1":
+        return 3 # same team piece
+
+
+    return 0
+
+# changes the tiles where the horse can move to 3 or 4. 3 means empty tile. 4 is enemy tile
+def rookOption(boardPieces, boardMarker, boardPlayer, tilePos):
+    j, i = tilePos
+    piece = boardPieces[j][i]
+
+
+    for k in [-1, 1]:
+        c = 0
+        while moveValid([j + c + k, i], boardPlayer) == 0:
+            boardMarker[j + c + k][i] = 3
+            c += k
+
+        if moveValid([j + c + k, i], boardPlayer) == 2:
+            boardMarker[j + c + k][i] = 4
+
+    for k in [-1, 1]:
+        c = 0
+        while moveValid([j, i + c + k], boardPlayer) == 0:
+            boardMarker[j][i + c + k] = 3
+            c += k
+        if moveValid([j, i + c + k], boardPlayer) == 2:
+            boardMarker[j][i + c + k] = 4
+
+    return boardMarker
+
+# changes the tiles where the bishop can move to 3 or 4. 3 means empty tile. 4 is enemy tile
+def bishopOption(boardPieces, boardMarker, boardPlayer, tilePos):
+    j, i = tilePos
+    piece = boardPieces[j][i]
+
+    for k in [-1, 1]:
+        c = 0
+
+        while moveValid([j + c + k, i + c + k], boardPlayer) == 0:
+            boardMarker[j + c + k][i + c + k] = 3
+            c += k
+        if moveValid([j + c + k, i + c + k], boardPlayer) == 2:
+            boardMarker[j + c + k][i + c + k] = 4
+
+    for k in [-1, 1]:
+        c = 0
+
+        while moveValid([j + c + k, i + (c + k) * -1], boardPlayer) == 0:
+            boardMarker[j + c + k][i + (c + k) * -1] = 3
+            c += k
+        if moveValid([j + c + k, i + (c + k) * -1], boardPlayer) == 2:
+            boardMarker[j + c + k][i + (c + k) * -1] = 4
+
+    return boardMarker
+
+# changes the tiles where the chosen piece can move to 3 or 4. 3 means empty tile. 4 is enemy tile
+def moveOption(boardPieces, boardMarker, boardPlayer, tilePos):
+    j, i = tilePos
+    piece = boardPieces[j][i]
+
+    if piece == "p":
+        if moveValid([j - 1, i], boardPlayer) == 0:
+            boardMarker[j - 1][i] = 3
+        if j == 6:
+            if moveValid([j - 2, i], boardPlayer) == 0:
+                boardMarker[j - 2][i] = 3
+
+    elif piece == "r":
+        rookOption(boardPieces, boardMarker, boardPlayer, tilePos)
+
+    elif piece == "b":
+        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos)
+
+    elif piece == "h":
+        for k in [-1, 1]:
+            for c in [-1, 1]:
+                if moveValid([j + 2 * k, i + c], boardPlayer) == 0:
+                    boardMarker[j + 2 * k][i + c] = 3
+                if moveValid([j + 2 * k, i + c], boardPlayer) == 2:
+                    boardMarker[j + 2 * k][i + c] = 4
+
+        for k in [-1, 1]:
+            for c in [-1, 1]:
+                if moveValid([j + c, i + 2 * k], boardPlayer) == 0:
+                    boardMarker[j + c][i + 2 * k] = 3
+                if moveValid([j + c, i + 2 * k], boardPlayer) == 2:
+                    boardMarker[j + c][i + 2 * k] = 4
+
+    elif piece == "q":
+        rookOption(boardPieces, boardMarker, boardPlayer, tilePos)
+        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos)
+
+
+
+    return boardMarker
+                
+            
+            
+
 
 
 # Main game loop
@@ -134,8 +258,8 @@ while True:
 
 
 
-    cursor(loc, tileSize, boardStart, boardTiles, click)
-    drawBoard(boardTiles)
+    cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click)
+    drawBoard(boardRects, boardMarker)
     drawPieces(boardPieces)
 
 
