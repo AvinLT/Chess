@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 import sys
+import copy
 
 clock = pygame.time.Clock()  # initialize clock
 pygame.init()  # initialize pygame
@@ -10,32 +11,43 @@ DISPLAY_SIZE = (350, 300)  # display size
 display = pygame.Surface(DISPLAY_SIZE)  # what we display images on. later print 'display' on screen
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)  # initialize window
 
+
+
+
 # image sprites
 pawn = pygame.image.load("Sprites\pawn.png")
+pawnB = pygame.image.load("Sprites\pawn (1).png")
 rook = pygame.image.load(r'Sprites\rook.png')
+rookB = pygame.image.load(r'Sprites\rook (1).png')
 bishop = pygame.image.load(r"Sprites\bishop.png")
+bishopB = pygame.image.load(r"Sprites\bishop (1).png")
 queen = pygame.image.load(r"Sprites\queen.png")
+queenB = pygame.image.load(r"Sprites\queen (1).png")
 king = pygame.image.load(r"Sprites\king.png")
+kingB = pygame.image.load(r"Sprites\king (1).png")
 horse = pygame.image.load(r"Sprites\horse.png")
-pieces = {"p": pawn, "r": rook, "b": bishop, "q": queen, "k": king, "h": horse}
+horseB = pygame.image.load(r"Sprites\horse (1).png")
+
+pieces = {"p": [pawn, pawnB], "r": [rook, rookB], "b": [bishop, bishopB],
+          "q": [queen, queenB], "k": [king, kingB], "h": [horse, horseB]}
 
 # pieces on board
 boardPieces = [["r", "h", "b", "q", "k", "b", "h", "r"],
-               ["p", "p", "p", "p", "o", "p", "p", "p"],
-               ["o", "o", "o", "o", "o", "o", "k", "o"],
-               ["o", "o", "o", "h", "o", "o", "k", "o"],
-               ["o", "q", "o", "h", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "o", "k", "o", "o"],
+               ["p", "p", "p", "p", "p", "p", "p", "p"],
+               ["o", "o", "o", "o", "o", "o", "o", "o"],
+               ["o", "o", "o", "o", "o", "o", "o", "o"],
+               ["o", "o", "o", "o", "o", "o", "o", "o"],
+               ["o", "o", "o", "o", "o", "o", "o", "o"],
                ["p", "p", "p", "p", "p", "p", "p", "p"],
                ["r", "h", "b", "k", "q", "b", "h", "r"]]
 
 # board to indicate each player
 boardPlayer = [[2, 2, 2, 2, 2, 2, 2, 2],
-               [2, 2, 2, 2, 0, 2, 2, 2],
-               [0, 0, 0, 0, 0, 0, 1, 0],
-               [0, 0, 0, 1, 0, 0, 1, 0],
-               [0, 1, 0, 1, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 1, 0, 0],
+               [2, 2, 2, 2, 2, 2, 2, 2],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
                [1, 1, 1, 1, 1, 1, 1, 1],
                [1, 1, 1, 1, 1, 1, 1, 1]]
 
@@ -61,6 +73,13 @@ moving = False  # player is in the process of choosing a piece, include animatio
 initialPos = [0, 0]  # initial position of piece picked
 grads = [0, 0]  # y and x speed of the piece in animation
 ignore = None  # holds positon of the piece which is in animation.
+turn = 0
+inCheck = False
+"""rotating = False
+angle = 0
+displayCopy = pygame.transform.rotate(display, angle)
+displayCopy.set_colorkey((0,0,0))"""
+
 
 # fills boardMarker and boardRects
 for j in range(8):
@@ -73,7 +92,7 @@ for j in range(8):
     boardMarker.append((row1))
 
 
-# darws board
+# draws board
 def drawBoard(boardRects, boardMarker):
     for j in range(8):
         for i in range(8):
@@ -94,22 +113,24 @@ def drawBoard(boardRects, boardMarker):
 
 
 # draws chess pieces
-def drawPieces(boardPieces, ignore):
+def drawPieces(boardPieces, turn, boardPlayer, ignore):
     for j in range(len(boardPieces)):
         for i in range(len(boardPieces)):
             if [j, i] != ignore:
+                temp = 0 if (turn + boardPlayer[j][i]) % 2 == 1 else 1
+
                 if boardPieces[j][i] == "p":
-                    display.blit(pawn, [i * tileSize, j * tileSize])
+                    display.blit(pieces["p"][temp], [i * tileSize, j * tileSize])
                 elif boardPieces[j][i] == "r":
-                    display.blit(rook, [i * tileSize, j * tileSize])
+                    display.blit(pieces["r"][temp], [i * tileSize, j * tileSize])
                 elif boardPieces[j][i] == "h":
-                    display.blit(horse, [i * tileSize, j * tileSize])
+                    display.blit(pieces["h"][temp], [i * tileSize, j * tileSize])
                 elif boardPieces[j][i] == "b":
-                    display.blit(bishop, [i * tileSize, j * tileSize])
+                    display.blit(pieces["b"][temp], [i * tileSize, j * tileSize])
                 elif boardPieces[j][i] == "q":
-                    display.blit(queen, [i * tileSize, j * tileSize])
+                    display.blit(pieces["q"][temp], [i * tileSize, j * tileSize])
                 elif boardPieces[j][i] == "k":
-                    display.blit(king, [i * tileSize, j * tileSize])
+                    display.blit(pieces["k"][temp], [i * tileSize, j * tileSize])
 
 
 # changes the colour indication for the tile where the cursor is on
@@ -281,6 +302,10 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos):
     if piece == "p":
         if moveValid([j - 1, i], boardPlayer) == 0:
             boardMarker[j - 1][i] = 3
+        if moveValid([j - 1, i - 1], boardPlayer) == 2:
+            boardMarker[j - 1][i - 1] = 4
+        if moveValid([j - 1, i + 1], boardPlayer) == 2:
+            boardMarker[j - 1][i + 1] = 4
         if j == 6:
             if moveValid([j - 2, i], boardPlayer) == 0:
                 boardMarker[j - 2][i] = 3
@@ -334,19 +359,93 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos):
 
     return boardMarker
 
+def flip(boardPlayer, boardPieces, boardMarker):
+    boards = []
+    for board in [boardPlayer, boardPieces, boardMarker]:
+
+        if board == boardPlayer:
+            for j in range(8):
+                for i in range(8):
+                    if board[j][i] == 2:
+                        board[j][i] = 1
+                    elif board[j][i] == 1:
+                        board[j][i] = 2
+                    else:
+                        board[j][i] = 0
+
+        board = [row[::-1] for row in board][::-1]
+        boards.append(board)
+    return boards[0], boards[1], boards[2]
+
+
+def isKingCheck(boardPieces, boardPlayer, boardMarker):
+
+
+    boardPlayer = [row[::-1] for row in boardPlayer][::-1]
+    boardPieces = [row[::-1] for row in boardPieces][::-1]
+    boardMarker = [row[::-1] for row in boardMarker][::-1]
+    for j in range(8):
+        for i in range(8):
+            if boardPlayer[j][i] == 2:
+                boardPlayer[j][i] = 1
+            elif boardPlayer[j][i] == 1:
+                boardPlayer[j][i] = 2
+            else:
+                boardPlayer[j][i] = 0
+
+
+    boardMarkerEmpty = []
+    for j in range(8):
+        row1 = []
+        for i in range(8):
+            row1.append((i + j) % 2)
+        boardMarkerEmpty.append((row1))
+
+    kingPos = []
+    boardMarkerCopy = copy.deepcopy(boardMarker)
+
+
+
+    for j in range(8):
+        for i in range(8):
+            if boardPieces[j][i] == "k" and boardPlayer[j][i] == 2:
+                kingPos = [j, i]
+
+    for j in range(8):
+        for i in range(8):
+            if boardPlayer[j][i] == 1:
+                piece = boardPieces[j][i]
+                boardMarker = copy.deepcopy(boardMarkerEmpty)
+                boardMarker = moveOption(boardPieces, boardMarker, boardPlayer, (j, i))
+
+                if boardMarker[kingPos[0]][kingPos[1]] == 4:
+                    boardMarker = boardMarkerCopy
+                    boardPlayer, boardPieces, boardMarker = flip(boardPlayer, boardPieces, boardMarker)
+                    return True
+
+
+
+
+    boardMarker = boardMarkerCopy
+    boardPlayer = [row[::-1] for row in boardPlayer][::-1]
+    boardPieces = [row[::-1] for row in boardPieces][::-1]
+    boardMarker = [row[::-1] for row in boardMarker][::-1]
+    return False
+
+
 
 # prints out the different boards for debugging purposes
 def debug(boardPieces, boardMarker, boardPlayer):
-    print("___________________")
+    print("___________________________")
     for row in boardPieces:
         print(row)
-    print("\n")
+    print("\n\n")
     for row in boardMarker:
         print(row)
-    print("\n")
+    print("\n\n")
     for row in boardPlayer:
         print(row)
-    print("\n")
+    print("\n\n")
 
 
 # Main game loop
@@ -366,6 +465,11 @@ while True:
             if event.button == 1:  # left click
                 click = 1
 
+    """if rotating:
+        angle += 5
+        if angle >= 180:
+            rotating = False"""
+
     ignore = None
     boardMarker, initialPos = cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click, initialPos)
     drawBoard(boardRects, boardMarker)
@@ -380,8 +484,7 @@ while True:
             if my >= j and my <= j + tileSize:
                 for i in range(0, tileSize * 8, tileSize):
                     if mx >= i and mx <= i + tileSize:
-                        if boardMarker[j // tileSize][i // tileSize] == 3 and [j,
-                                                                               i] != initialPos:  # when valid move is clicked, cannot be itself
+                        if boardMarker[j // tileSize][i // tileSize] in [3, 4] and [j,i] != initialPos:  # when valid move is clicked, cannot be itself
                             if click == 1:
                                 animation = True
                                 finalPos = [j, i]  # pice is being moved to
@@ -415,10 +518,14 @@ while True:
             if done == [True, True]:
                 moving = False
                 animation = False
+                rotating = True
                 tempJI = [0, 0]
 
                 initialPos = [initialPos[0] // tileSize, initialPos[1] // tileSize]
                 finalPos = [finalPos[0] // tileSize, finalPos[1] // tileSize]
+
+                """if boardPlayer[finalPos[0]][finalPos[1]] == 2:
+                    """
 
                 boardPieces[finalPos[0]][finalPos[1]] = boardPieces[initialPos[0]][
                     initialPos[1]]  # moves piece to chosen position
@@ -430,15 +537,31 @@ while True:
                 initialPos = [0, 0]
                 finalPos = [0, 0]
 
-                debug(boardPieces, boardMarker, boardPlayer)  # prints boards
+                turn = (turn + 1) % 2
+
+                boardPlayer, boardPieces, boardMarker = \
+                flip(boardPlayer, boardPieces, boardMarker)
+
+
+
+                if isKingCheck(boardPieces, boardPlayer, boardMarker):
+                    print("IN CHECKK!!")
+
+                #debug(boardPieces, boardMarker, boardPlayer)  # prints boards
 
             else:
                 ignore = [initialPos[0] // tileSize,
                           initialPos[1] // tileSize]  # the piece being moved should be ignored
-                display.blit(pieces[piece], [initialPos[1] + tempJI[1],
+                display.blit(pieces[piece][turn], [initialPos[1] + tempJI[1],
                                              initialPos[0] + tempJI[0]])  # display moving piece with displacement
 
-    drawPieces(boardPieces, ignore)
+    drawPieces(boardPieces, turn, boardPlayer, ignore)
+
+    """if rotating:
+        displayCopy = pygame.transform.rotate(display, angle)
+        screen.blit(displayCopy, (175 - int(displayCopy.get_width() / 2), 150 - int(displayCopy.get_height() / 2)))
+    else:"""
+
 
     # mainDisplay = pygame.transform.scale(display, WINDOW_SIZE)
     screen.blit(display, (boardStart[0], boardStart[1]))
