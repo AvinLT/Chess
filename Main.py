@@ -39,8 +39,16 @@ boardPieces = [["r", "h", "b", "q", "k", "b", "h", "r"],
                ["o", "o", "o", "o", "o", "o", "o", "o"],
                ["o", "o", "o", "o", "o", "o", "o", "o"],
                ["p", "p", "p", "p", "p", "p", "p", "p"],
-               ["r", "h", "b", "k", "q", "b", "h", "r"]]
+               ["r", "h", "b", "q", "k", "b", "h", "r"]]
 
+boardPieces = [["r", "o", "b", "q", "k", "b", "h", "r"],
+               ["p", "p", "p", "p", "o", "p", "p", "p"],
+               ["o", "o", "o", "o", "o", "o", "o", "o"],
+               ["o", "o", "o", "o", "p", "o", "o", "o"],
+               ["o", "o", "o", "h", "p", "o", "p", "o"],
+               ["o", "o", "h", "o", "o", "o", "o", "o"],
+               ["p", "p", "p", "p", "h", "p", "p", "p"],
+               ["r", "o", "b", "q", "k", "b", "o", "r"]]
 # board to indicate each player
 boardPlayer = [[2, 2, 2, 2, 2, 2, 2, 2],
                [2, 2, 2, 2, 2, 2, 2, 2],
@@ -50,6 +58,15 @@ boardPlayer = [[2, 2, 2, 2, 2, 2, 2, 2],
                [0, 0, 0, 0, 0, 0, 0, 0],
                [1, 1, 1, 1, 1, 1, 1, 1],
                [1, 1, 1, 1, 1, 1, 1, 1]]
+
+boardPlayer = [[2, 0, 2, 2, 2, 2, 2, 2],
+               [2, 2, 2, 2, 0, 2, 2, 2],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 2, 0, 0, 0],
+               [0, 0, 0, 2, 1, 0, 0, 0],
+               [0, 0, 1, 0, 0, 0, 0, 0],
+               [1, 1, 1, 1, 1, 1, 1, 1],
+               [1, 0, 1, 1, 1, 1, 0, 1]]
 
 boardRects = []  # a board of rects for each tile
 boardMarker = []  # a board with numbers corresponding to the colour of the tile
@@ -160,7 +177,7 @@ def cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click, tilePos):
                                 boardMarker[j // tileSize][i // tileSize] = 3  # makes tiles light green
                                 tilePos = [j, i]
                                 boardMarker = moveOption(boardPieces, boardMarker, boardPlayer,
-                                                         (j // tileSize, i // tileSize))
+                                                         (j // tileSize, i // tileSize), False)
 
     return boardMarker, tilePos
 
@@ -230,131 +247,152 @@ def movePiece(loc, initialPos, tileSize, boardPieces):
 """
 
 
-def moveValid(tilePos, boardPlayer):
+def moveValid(tilePos, boardPlayer, OppDir):
     if tilePos[0] < 0 or tilePos[0] > 7:
         return 1  # out of the board
     if tilePos[1] < 0 or tilePos[1] > 7:
         return 1  # out of the board
-    if boardPlayer[tilePos[0]][tilePos[1]] == 2:
-        return 2  # enemy piece
-    if boardPlayer[tilePos[0]][tilePos[1]] == 1:
-        return 3  # same team piece
+    if not OppDir:
+
+        if boardPlayer[tilePos[0]][tilePos[1]] == 2:
+            return 2  # enemy piece
+        if boardPlayer[tilePos[0]][tilePos[1]] == 1:
+            return 3  # same team piece
+    else:
+        if boardPlayer[tilePos[0]][tilePos[1]] == 1:
+            return 2  # enemy piece
+        if boardPlayer[tilePos[0]][tilePos[1]] == 2:
+            return 3  # same team piece
 
     return 0
 
 
 # changes the tiles where the horse can move to 3 or 4. 3 means empty tile. 4 is enemy tile
-def rookOption(boardPieces, boardMarker, boardPlayer, tilePos):
+def rookOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
     j, i = tilePos
     piece = boardPieces[j][i]
 
     for k in [-1, 1]:
         c = 0
-        while moveValid([j + c + k, i], boardPlayer) == 0:
+        while moveValid([j + c + k, i], boardPlayer, OppDir) == 0:
             boardMarker[j + c + k][i] = 3
             c += k
 
-        if moveValid([j + c + k, i], boardPlayer) == 2:
+        if moveValid([j + c + k, i], boardPlayer, OppDir) == 2:
             boardMarker[j + c + k][i] = 4
 
     for k in [-1, 1]:
         c = 0
-        while moveValid([j, i + c + k], boardPlayer) == 0:
+        while moveValid([j, i + c + k], boardPlayer, OppDir) == 0:
             boardMarker[j][i + c + k] = 3
             c += k
-        if moveValid([j, i + c + k], boardPlayer) == 2:
+        if moveValid([j, i + c + k], boardPlayer, OppDir) == 2:
             boardMarker[j][i + c + k] = 4
 
     return boardMarker
 
 
 # changes the tiles where the bishop can move to 3 or 4. 3 means empty tile. 4 is enemy tile
-def bishopOption(boardPieces, boardMarker, boardPlayer, tilePos):
+def bishopOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
     j, i = tilePos
     piece = boardPieces[j][i]
 
     for k in [-1, 1]:
         c = 0
 
-        while moveValid([j + c + k, i + c + k], boardPlayer) == 0:
+        while moveValid([j + c + k, i + c + k], boardPlayer, OppDir) == 0:
             boardMarker[j + c + k][i + c + k] = 3
             c += k
-        if moveValid([j + c + k, i + c + k], boardPlayer) == 2:
+        if moveValid([j + c + k, i + c + k], boardPlayer, OppDir) == 2:
             boardMarker[j + c + k][i + c + k] = 4
 
     for k in [-1, 1]:
         c = 0
 
-        while moveValid([j + c + k, i + (c + k) * -1], boardPlayer) == 0:
+        while moveValid([j + c + k, i + (c + k) * -1], boardPlayer, OppDir) == 0:
             boardMarker[j + c + k][i + (c + k) * -1] = 3
             c += k
-        if moveValid([j + c + k, i + (c + k) * -1], boardPlayer) == 2:
+        if moveValid([j + c + k, i + (c + k) * -1], boardPlayer, OppDir) == 2:
             boardMarker[j + c + k][i + (c + k) * -1] = 4
 
     return boardMarker
 
 
 # changes the tiles where the chosen piece can move to 3 or 4. 3 means empty tile. 4 is enemy tile
-def moveOption(boardPieces, boardMarker, boardPlayer, tilePos):
+def moveOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
     j, i = tilePos
     piece = boardPieces[j][i]
 
+
+
     if piece == "p":
-        if moveValid([j - 1, i], boardPlayer) == 0:
-            boardMarker[j - 1][i] = 3
-        if moveValid([j - 1, i - 1], boardPlayer) == 2:
-            boardMarker[j - 1][i - 1] = 4
-        if moveValid([j - 1, i + 1], boardPlayer) == 2:
-            boardMarker[j - 1][i + 1] = 4
-        if j == 6:
-            if moveValid([j - 2, i], boardPlayer) == 0:
-                boardMarker[j - 2][i] = 3
+        if not OppDir:
+            if moveValid([j - 1, i], boardPlayer, OppDir) == 0:
+                boardMarker[j - 1][i] = 3
+            if moveValid([j - 1, i - 1], boardPlayer, OppDir) == 2:
+                boardMarker[j - 1][i - 1] = 4
+            if moveValid([j - 1, i + 1], boardPlayer, OppDir) == 2:
+                boardMarker[j - 1][i + 1] = 4
+            if j == 6:
+                if moveValid([j - 2, i], boardPlayer, OppDir) == 0:
+                    boardMarker[j - 2][i] = 3
+        else:
+
+            if moveValid([j + 1, i], boardPlayer, OppDir) == 0:
+                boardMarker[j + 1][i] = 3
+            if moveValid([j + 1, i + 1], boardPlayer, OppDir) == 2:
+                boardMarker[j + 1][i + 1] = 4
+            if moveValid([j + 1, i - 1], boardPlayer, OppDir) == 2:
+                boardMarker[j + 1][i - 1] = 4
+            if j == 1:
+                if moveValid([j + 2, i], boardPlayer, OppDir) == 0:
+                    boardMarker[j + 2][i] = 3
 
     elif piece == "r":
-        rookOption(boardPieces, boardMarker, boardPlayer, tilePos)
+        rookOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
 
     elif piece == "b":
-        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos)
+        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
 
     elif piece == "h":
         for k in [-1, 1]:
             for c in [-1, 1]:
-                if moveValid([j + 2 * k, i + c], boardPlayer) == 0:
+                if moveValid([j + 2 * k, i + c], boardPlayer, OppDir) == 0:
                     boardMarker[j + 2 * k][i + c] = 3
-                if moveValid([j + 2 * k, i + c], boardPlayer) == 2:
+                if moveValid([j + 2 * k, i + c], boardPlayer, OppDir) == 2:
                     boardMarker[j + 2 * k][i + c] = 4
 
         for k in [-1, 1]:
             for c in [-1, 1]:
-                if moveValid([j + c, i + 2 * k], boardPlayer) == 0:
+                if moveValid([j + c, i + 2 * k], boardPlayer, OppDir) == 0:
                     boardMarker[j + c][i + 2 * k] = 3
-                elif moveValid([j + c, i + 2 * k], boardPlayer) == 2:
+                elif moveValid([j + c, i + 2 * k], boardPlayer, OppDir) == 2:
                     boardMarker[j + c][i + 2 * k] = 4
 
     elif piece == "q":
-        rookOption(boardPieces, boardMarker, boardPlayer, tilePos)
-        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos)
+        rookOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
+        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
 
     elif piece == "k":
         for k in [0, 1]:
-            if moveValid([j - 1, i + k], boardPlayer) == 0:
+            if moveValid([j - 1, i + k], boardPlayer, OppDir) == 0:
                 boardMarker[j - 1][i + k] = 3
-            elif moveValid([j - 1, i + k], boardPlayer) == 2:
+            elif moveValid([j - 1, i + k], boardPlayer, OppDir) == 2:
                 boardMarker[j - 1][i + k] = 4
         for k in [0, 1]:
-            if moveValid([j + k, i + 1], boardPlayer) == 0:
+            if moveValid([j + k, i + 1], boardPlayer, OppDir) == 0:
                 boardMarker[j + k][i + 1] = 3
-            elif moveValid([j + k, i + 1], boardPlayer) == 2:
+            elif moveValid([j + k, i + 1], boardPlayer, OppDir) == 2:
                 boardMarker[j + k][i + 1] = 4
         for k in [0, -1]:
-            if moveValid([j + 1, i + k], boardPlayer) == 0:
+            if moveValid([j + 1, i + k], boardPlayer, OppDir) == 0:
                 boardMarker[j + 1][i + k] = 3
-            elif moveValid([j + 1, i + k], boardPlayer) == 2:
+            elif moveValid([j + 1, i + k], boardPlayer, OppDir) == 2:
                 boardMarker[j + 1][i + k] = 4
         for k in [0, -1]:
-            if moveValid([j + k, i - 1], boardPlayer) == 0:
+            if moveValid([j + k, i - 1], boardPlayer, OppDir) == 0:
                 boardMarker[j + k][i - 1] = 3
-            if moveValid([j + k, i - 1], boardPlayer) == 2:
+            if moveValid([j + k, i - 1], boardPlayer, OppDir) == 2:
                 boardMarker[j + k][i - 1] = 4
 
     return boardMarker
@@ -381,7 +419,7 @@ def flip(boardPlayer, boardPieces, boardMarker):
 def isKingCheck(boardPieces, boardPlayer, boardMarker):
 
 
-    boardPlayer = [row[::-1] for row in boardPlayer][::-1]
+    """boardPlayer = [row[::-1] for row in boardPlayer][::-1]
     boardPieces = [row[::-1] for row in boardPieces][::-1]
     boardMarker = [row[::-1] for row in boardMarker][::-1]
     for j in range(8):
@@ -391,15 +429,10 @@ def isKingCheck(boardPieces, boardPlayer, boardMarker):
             elif boardPlayer[j][i] == 1:
                 boardPlayer[j][i] = 2
             else:
-                boardPlayer[j][i] = 0
+                boardPlayer[j][i] = 0"""
 
 
-    boardMarkerEmpty = []
-    for j in range(8):
-        row1 = []
-        for i in range(8):
-            row1.append((i + j) % 2)
-        boardMarkerEmpty.append((row1))
+    boardMarkerEmpty = resetMarker()
 
     kingPos = []
     boardMarkerCopy = copy.deepcopy(boardMarker)
@@ -408,29 +441,94 @@ def isKingCheck(boardPieces, boardPlayer, boardMarker):
 
     for j in range(8):
         for i in range(8):
-            if boardPieces[j][i] == "k" and boardPlayer[j][i] == 2:
+            if boardPieces[j][i] == "k" and boardPlayer[j][i] == 1:
                 kingPos = [j, i]
 
     for j in range(8):
         for i in range(8):
-            if boardPlayer[j][i] == 1:
+            if boardPlayer[j][i] == 2:
                 piece = boardPieces[j][i]
                 boardMarker = copy.deepcopy(boardMarkerEmpty)
-                boardMarker = moveOption(boardPieces, boardMarker, boardPlayer, (j, i))
+                boardMarker = moveOption(boardPieces, boardMarker, boardPlayer, (j, i), True)
 
                 if boardMarker[kingPos[0]][kingPos[1]] == 4:
                     boardMarker = boardMarkerCopy
-                    boardPlayer, boardPieces, boardMarker = flip(boardPlayer, boardPieces, boardMarker)
+                    #boardPlayer, boardPieces, boardMarker = flip(boardPlayer, boardPieces, boardMarker)
                     return True
 
 
 
 
     boardMarker = boardMarkerCopy
-    boardPlayer = [row[::-1] for row in boardPlayer][::-1]
+    """boardPlayer = [row[::-1] for row in boardPlayer][::-1]
     boardPieces = [row[::-1] for row in boardPieces][::-1]
-    boardMarker = [row[::-1] for row in boardMarker][::-1]
+    boardMarker = [row[::-1] for row in boardMarker][::-1]"""
     return False
+
+
+def kingInDanger(initialPos, finalPos, boardPlayer, boardPieces, boardMarker):
+    boardPieces1 = copy.deepcopy(boardPieces)
+    boardPlayer1 = copy.deepcopy(boardPlayer)
+    
+    
+    boardMarker1 = resetMarker()
+
+    boardPieces1[finalPos[0]][finalPos[1]] = boardPieces1[initialPos[0]][initialPos[1]]  # moves piece to chosen position
+    boardPieces1[initialPos[0]][initialPos[1]] = "o"  # previous position is now empty
+
+    boardPlayer1[finalPos[0]][finalPos[1]] = 1  # new position is occupied by team piece
+    boardPlayer1[initialPos[0]][initialPos[1]] = 0  # previous position is now empty
+
+    if isKingCheck(boardPieces1, boardPlayer1, boardMarker):
+        return True
+    else:
+        return False
+
+def resetMarker():
+    boardMarker1 = []
+    for j in range(8):
+        row1 = []
+        for i in range(8):
+            row1.append((i + j) % 2)
+        boardMarker1.append((row1))
+    return boardMarker1
+
+def isCheckMate(boardPlayer, boardMarker, boardPieces):
+    boardMarker1 = resetMarker()
+    boardPieces1 = copy.deepcopy(boardPieces)
+    boardPlayer1 = copy.deepcopy(boardPlayer)
+
+    for j in range(8):
+        for i in range(8):
+            if boardPlayer[j][i] == 1:
+                initialPos = [j, i]
+
+                boardMarker1 = resetMarker()
+                boardPieces1 = copy.deepcopy(boardPieces)
+                boardPlayer1 = copy.deepcopy(boardPlayer)
+
+                boardMarker1 = moveOption(boardPieces, boardMarker1, boardPlayer, (j, i), False)
+                for y in range(8):
+                    for x in range(8):
+                        finalPos = [y, x]
+                        if boardMarker1[y][x] in [3, 4] and [y, x] != [j, x]:
+                            boardPieces1[finalPos[0]][finalPos[1]] = boardPieces1[initialPos[0]][initialPos[1]]  # moves piece to chosen position
+                            boardPieces1[initialPos[0]][initialPos[1]] = "o"  # previous position is now empty
+
+                            boardPlayer1[finalPos[0]][finalPos[1]] = 1  # new position is occupied by team piece
+                            boardPlayer1[initialPos[0]][initialPos[1]] = 0  # previous position is now empty
+
+                            if not isKingCheck(boardPieces1, boardPlayer1, boardMarker1):
+                                return False
+
+
+
+    return True
+
+
+
+
+
 
 
 
@@ -486,9 +584,15 @@ while True:
                     if mx >= i and mx <= i + tileSize:
                         if boardMarker[j // tileSize][i // tileSize] in [3, 4] and [j,i] != initialPos:  # when valid move is clicked, cannot be itself
                             if click == 1:
-                                animation = True
                                 finalPos = [j, i]  # pice is being moved to
-                                grads = [(j - initialPos[0]), (i - initialPos[1])]  # y and x speed of animation
+
+                                if not kingInDanger([initialPos[0] // tileSize, initialPos[1] // tileSize], [finalPos[0] //tileSize, finalPos[1] // tileSize], boardPlayer, boardPieces, boardMarker):
+                                    animation = True
+                                    grads = [(j - initialPos[0]), (i - initialPos[1])]  # y and x speed of animation
+                                else:
+                                    print("KING IS IN CHECK")
+
+
 
         if animation:
             piece = boardPieces[initialPos[0] // tileSize][initialPos[1] // tileSize]  # piece being moved
@@ -545,7 +649,10 @@ while True:
 
 
                 if isKingCheck(boardPieces, boardPlayer, boardMarker):
-                    print("IN CHECKK!!")
+                    if isCheckMate(boardPlayer, boardMarker, boardPieces):
+                        print("CHECKMATE")
+                    else:
+                        print("JUST CHECKK")
 
                 #debug(boardPieces, boardMarker, boardPlayer)  # prints boards
 
