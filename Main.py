@@ -6,8 +6,8 @@ import copy
 clock = pygame.time.Clock()  # initialize clock
 pygame.init()  # initialize pygame
 
-WINDOW_SIZE = (350, 300)  # window size
-DISPLAY_SIZE = (350, 300)  # display size
+WINDOW_SIZE = (650, 630)  # window size
+DISPLAY_SIZE = (512, 512)  # display size
 display = pygame.Surface(DISPLAY_SIZE)  # what we display images on. later print 'display' on screen
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)  # initialize window
 
@@ -30,6 +30,18 @@ horseB = pygame.image.load(r"Sprites\horse (1).png")
 
 pieces = {"p": [pawn, pawnB], "r": [rook, rookB], "b": [bishop, bishopB],
           "q": [queen, queenB], "k": [king, kingB], "h": [horse, horseB]}
+
+backGround = pygame.image.load(r"Sprites\woodBackground.jpg")
+
+fontStyle = pygame.font.SysFont("franklingothicmedium", 70, bold = True)
+
+textBlack =     "     BLACK'S MOVE     "
+textWhite =     "     WHITE'S MOVE     "
+textCheck =     "       IN CHECK       "
+textCHECKMATE = "      CHECKMATE!      "
+
+texts = [textBlack, textWhite, textCheck, textCHECKMATE]
+
 
 # pieces on board
 boardPieces = [["r", "h", "b", "q", "k", "b", "h", "r"],
@@ -63,15 +75,15 @@ boardPlayer = [[2, 0, 2, 2, 2, 2, 2, 2],
                [2, 2, 2, 2, 0, 2, 2, 2],
                [0, 0, 0, 0, 0, 0, 0, 0],
                [0, 0, 0, 0, 2, 0, 0, 0],
-               [0, 0, 0, 2, 1, 0, 0, 0],
+               [0, 0, 0, 2, 1, 0, 1, 0],
                [0, 0, 1, 0, 0, 0, 0, 0],
                [1, 1, 1, 1, 1, 1, 1, 1],
                [1, 0, 1, 1, 1, 1, 0, 1]]
 
 boardRects = []  # a board of rects for each tile
 boardMarker = []  # a board with numbers corresponding to the colour of the tile
-boardStart = (45, 20)  # top left corner of board
-tileSize = 32
+boardStart = (64, 32)  # top left corner of board
+tileSize = 64
 borderSize = 4
 
 # colour codes
@@ -92,11 +104,9 @@ grads = [0, 0]  # y and x speed of the piece in animation
 ignore = None  # holds positon of the piece which is in animation.
 turn = 0
 inCheck = False
-"""rotating = False
-angle = 0
-displayCopy = pygame.transform.rotate(display, angle)
-displayCopy.set_colorkey((0,0,0))"""
-
+inCheckMate = False
+pauseTimeMark = 60
+pauseTime = pauseTimeMark
 
 # fills boardMarker and boardRects
 for j in range(8):
@@ -149,7 +159,25 @@ def drawPieces(boardPieces, turn, boardPlayer, ignore):
                 elif boardPieces[j][i] == "k":
                     display.blit(pieces["k"][temp], [i * tileSize, j * tileSize])
 
+def drawText(texts, fontStyle, displayDim, check, checkmate, turn, textColour, boardStart):
 
+    if check:
+        textStart = [(displayDim[0] / 2 - fontStyle.size(texts[2])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1]]
+        textObj = fontStyle.render(texts[2], 1, textColour)
+    elif checkmate:
+        textStart = [(displayDim[0] / 2 - fontStyle.size(texts[3])[0] / 2) + boardStart[0],displayDim[1] + boardStart[1]]
+        textObj = fontStyle.render(texts[3], 1, textColour)
+    else:
+        if turn == 0:
+            textStart = [(displayDim[0] / 2 - fontStyle.size(texts[1])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1]]
+            textObj = fontStyle.render(texts[1], 1, textColour)
+        else:
+            textStart = [(displayDim[0] / 2 - fontStyle.size(texts[0])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1]]
+            textObj = fontStyle.render(texts[0], 1, textColour)
+
+    screen.blit(textObj, textStart)
+    
+    
 # changes the colour indication for the tile where the cursor is on
 def cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click, tilePos):
     mx = loc[0] - boardStart[0]
@@ -180,71 +208,6 @@ def cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click, tilePos):
                                                          (j // tileSize, i // tileSize), False)
 
     return boardMarker, tilePos
-
-
-"""
-def movePiece(loc, initialPos, tileSize, boardPieces):
-    global animation
-    global grads
-    global tempJI
-    global  moving
-
-    #grads = [0,0]
-    mx = loc[0] - boardStart[0]
-    my = loc[1] - boardStart[1]
-
-    for j in range(0, tileSize * 8, tileSize):
-        if my >= j and my <= j + tileSize:
-            for i in range(0, tileSize * 8, tileSize):
-                if mx >= i and mx <= i + tileSize:
-                    if boardMarker[j // tileSize][i // tileSize] == 3 and [j, i ] != initialPos:
-                        if click == 1:
-                            animation = True
-                            finalPos = [j, i]
-                            grads = [(j - initialPos[0]), (i - initialPos[1])]
-
-    if animation:
-        piece = boardPieces[initialPos[0] // tileSize][initialPos[1] // tileSize]
-        ma = max (abs(grads[0]), abs(grads[1]))
-        grads = [grads[0]/ma, grads[1]/ma]
-
-        tempJI[0] += grads[0]
-        tempJI[1] += grads[1]
-        
-        done = [False, False]
-        
-        if grads[0] >= 0:
-            if initialPos[0] + tempJI[0] >= finalPos[0]:
-                done[0] = True
-        else:
-            if initialPos[0] + tempJI[0] <= finalPos[0]:
-                done[0] = True
-        
-        if grads[1] >= 0:
-            if initialPos[1] + tempJI[1] >= finalPos[1]:
-                done[1] = True
-        else:
-            if initialPos[1] + tempJI[1] <= finalPos[1]:
-                done[1] = True
-        
-        if done == [True, True]:
-            moving = False
-            animation = False
-            boardPieces[initialPos[0] // tileSize][initialPos[1] // tileSize], boardPieces[finalPos[0] // tileSize][finalPos[1] // tileSize] \
-            = boardPieces[finalPos[0] // tileSize][finalPos[1] // tileSize], boardPieces[initialPos[0] // tileSize][initialPos[1] // tileSize]
-
-            boardPlayer[initialPos[0] // tileSize][initialPos[1] // tileSize], boardPlayer[finalPos[0] // tileSize][finalPos[1] // tileSize] \
-            = boardPlayer[finalPos[0] // tileSize][finalPos[1] // tileSize], boardPlayer[initialPos[0] // tileSize][initialPos[1] // tileSize]
-        
-        display.blit(pieces[piece], [initialPos[1] + tempJI[1], initialPos[0] + tempJI[0]])
-
-
-
-
-        return [initialPos[0] // tileSize, initialPos[1] // tileSize]
-    return None
-
-"""
 
 
 def moveValid(tilePos, boardPlayer, OppDir):
@@ -418,20 +381,6 @@ def flip(boardPlayer, boardPieces, boardMarker):
 
 def isKingCheck(boardPieces, boardPlayer, boardMarker):
 
-
-    """boardPlayer = [row[::-1] for row in boardPlayer][::-1]
-    boardPieces = [row[::-1] for row in boardPieces][::-1]
-    boardMarker = [row[::-1] for row in boardMarker][::-1]
-    for j in range(8):
-        for i in range(8):
-            if boardPlayer[j][i] == 2:
-                boardPlayer[j][i] = 1
-            elif boardPlayer[j][i] == 1:
-                boardPlayer[j][i] = 2
-            else:
-                boardPlayer[j][i] = 0"""
-
-
     boardMarkerEmpty = resetMarker()
 
     kingPos = []
@@ -456,21 +405,14 @@ def isKingCheck(boardPieces, boardPlayer, boardMarker):
                     #boardPlayer, boardPieces, boardMarker = flip(boardPlayer, boardPieces, boardMarker)
                     return True
 
-
-
-
     boardMarker = boardMarkerCopy
-    """boardPlayer = [row[::-1] for row in boardPlayer][::-1]
-    boardPieces = [row[::-1] for row in boardPieces][::-1]
-    boardMarker = [row[::-1] for row in boardMarker][::-1]"""
+
     return False
 
 
 def kingInDanger(initialPos, finalPos, boardPlayer, boardPieces, boardMarker):
     boardPieces1 = copy.deepcopy(boardPieces)
     boardPlayer1 = copy.deepcopy(boardPlayer)
-    
-    
     boardMarker1 = resetMarker()
 
     boardPieces1[finalPos[0]][finalPos[1]] = boardPieces1[initialPos[0]][initialPos[1]]  # moves piece to chosen position
@@ -484,6 +426,7 @@ def kingInDanger(initialPos, finalPos, boardPlayer, boardPieces, boardMarker):
     else:
         return False
 
+
 def resetMarker():
     boardMarker1 = []
     for j in range(8):
@@ -493,7 +436,8 @@ def resetMarker():
         boardMarker1.append((row1))
     return boardMarker1
 
-def isCheckMate(boardPlayer, boardMarker, boardPieces):
+
+def isCheckMate(boardPlayer, boardPieces):
     boardMarker1 = resetMarker()
     boardPieces1 = copy.deepcopy(boardPieces)
     boardPlayer1 = copy.deepcopy(boardPlayer)
@@ -550,6 +494,7 @@ def debug(boardPieces, boardMarker, boardPlayer):
 while True:
 
     display.fill((0, 0, 0))  # makes display black
+    screen.fill((255, 200, 90))
 
     mx, my = pygame.mouse.get_pos()  # gets cursor co-ords
     loc = [mx, my]
@@ -578,26 +523,29 @@ while True:
         mx = loc[0] - boardStart[0]
         my = loc[1] - boardStart[1]
 
-        for j in range(0, tileSize * 8, tileSize):
-            if my >= j and my <= j + tileSize:
-                for i in range(0, tileSize * 8, tileSize):
-                    if mx >= i and mx <= i + tileSize:
-                        if boardMarker[j // tileSize][i // tileSize] in [3, 4] and [j,i] != initialPos:  # when valid move is clicked, cannot be itself
-                            if click == 1:
+        if click == 1:
+            for j in range(0, tileSize * 8, tileSize):
+                if my >= j and my <= j + tileSize:
+                    for i in range(0, tileSize * 8, tileSize):
+                        if mx >= i and mx <= i + tileSize:
+                            if boardMarker[j // tileSize][i // tileSize] in [3, 4] and [j,i] != initialPos:  # when valid move is clicked, cannot be itself
                                 finalPos = [j, i]  # pice is being moved to
 
                                 if not kingInDanger([initialPos[0] // tileSize, initialPos[1] // tileSize], [finalPos[0] //tileSize, finalPos[1] // tileSize], boardPlayer, boardPieces, boardMarker):
                                     animation = True
                                     grads = [(j - initialPos[0]), (i - initialPos[1])]  # y and x speed of animation
                                 else:
-                                    print("KING IS IN CHECK")
+                                    print("KING CANNOT MOVE THERE")
+
+                            elif boardMarker[j // tileSize][i // tileSize] in [0, 1]:
+                                moving = False
 
 
 
         if animation:
             piece = boardPieces[initialPos[0] // tileSize][initialPos[1] // tileSize]  # piece being moved
             maxx = max(abs(grads[0]), abs(grads[1]))
-            grads = [grads[0] / maxx, grads[1] / maxx]
+            grads = [grads[0] / maxx * 1.5, grads[1] / maxx * 1.5]
 
             tempJI[0] += grads[0]  # increases displacement
             tempJI[1] += grads[1]  # increases displacement
@@ -620,16 +568,9 @@ while True:
                     done[1] = True
 
             if done == [True, True]:
-                moving = False
-                animation = False
-                rotating = True
-                tempJI = [0, 0]
 
                 initialPos = [initialPos[0] // tileSize, initialPos[1] // tileSize]
                 finalPos = [finalPos[0] // tileSize, finalPos[1] // tileSize]
-
-                """if boardPlayer[finalPos[0]][finalPos[1]] == 2:
-                    """
 
                 boardPieces[finalPos[0]][finalPos[1]] = boardPieces[initialPos[0]][
                     initialPos[1]]  # moves piece to chosen position
@@ -638,21 +579,35 @@ while True:
                 boardPlayer[finalPos[0]][finalPos[1]] = 1  # new position is occupied by team piece
                 boardPlayer[initialPos[0]][initialPos[1]] = 0  # previous position is now empty
 
-                initialPos = [0, 0]
-                finalPos = [0, 0]
-
-                turn = (turn + 1) % 2
-
-                boardPlayer, boardPieces, boardMarker = \
-                flip(boardPlayer, boardPieces, boardMarker)
-
+                if pauseTime <= 0:
+                    moving = False
+                    animation = False
+                    rotating = True
+                    tempJI = [0, 0]
+                    pauseTime = pauseTimeMark
 
 
-                if isKingCheck(boardPieces, boardPlayer, boardMarker):
-                    if isCheckMate(boardPlayer, boardMarker, boardPieces):
-                        print("CHECKMATE")
-                    else:
-                        print("JUST CHECKK")
+
+                    initialPos = [0, 0]
+                    finalPos = [0, 0]
+
+                    turn = (turn + 1) % 2
+
+                    boardPlayer, boardPieces, boardMarker = \
+                    flip(boardPlayer, boardPieces, boardMarker)
+
+
+                    inCheck, inCheckMate = False, False
+                    if isKingCheck(boardPieces, boardPlayer, boardMarker):
+                        if isCheckMate(boardPlayer, boardPieces):
+                            inCheckMate = True
+                            print("CHECKMATE")
+                        else:
+                            inCheck = True
+                            print("JUST CHECKK")
+                else:
+                    pauseTime -= 1
+
 
                 #debug(boardPieces, boardMarker, boardPlayer)  # prints boards
 
@@ -663,14 +618,15 @@ while True:
                                              initialPos[0] + tempJI[0]])  # display moving piece with displacement
 
     drawPieces(boardPieces, turn, boardPlayer, ignore)
+    drawText(texts, fontStyle, DISPLAY_SIZE, inCheck, inCheckMate, turn, darkBrown, boardStart)
 
     """if rotating:
         displayCopy = pygame.transform.rotate(display, angle)
         screen.blit(displayCopy, (175 - int(displayCopy.get_width() / 2), 150 - int(displayCopy.get_height() / 2)))
     else:"""
 
-
-    # mainDisplay = pygame.transform.scale(display, WINDOW_SIZE)
+    #mainDisplay = pygame.transform.scale(display, WINDOW_SIZE)
     screen.blit(display, (boardStart[0], boardStart[1]))
+
     pygame.display.update()  # update display
     clock.tick(60)  # set frame rate
