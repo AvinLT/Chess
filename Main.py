@@ -1,7 +1,11 @@
-import pygame
+# Made by Avin Lanson
+
 from pygame.locals import *
 import sys
 import copy
+from ImageAndBoards import *
+
+
 
 clock = pygame.time.Clock()  # initialize clock
 pygame.init()  # initialize pygame
@@ -11,80 +15,22 @@ DISPLAY_SIZE = (512, 512)  # display size
 display = pygame.Surface(DISPLAY_SIZE)  # what we display images on. later print 'display' on screen
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)  # initialize window
 
+# font styles
+fontStyle = pygame.font.SysFont("franklingothicmedium", 60, bold = True)
+fontStyle1 = pygame.font.SysFont("franklingothicmedium", 20, bold = True)
 
-
-
-# image sprites
-pawn = pygame.image.load("Sprites\pawn.png")
-pawnB = pygame.image.load("Sprites\pawn (1).png")
-rook = pygame.image.load(r'Sprites\rook.png')
-rookB = pygame.image.load(r'Sprites\rook (1).png')
-bishop = pygame.image.load(r"Sprites\bishop.png")
-bishopB = pygame.image.load(r"Sprites\bishop (1).png")
-queen = pygame.image.load(r"Sprites\queen.png")
-queenB = pygame.image.load(r"Sprites\queen (1).png")
-king = pygame.image.load(r"Sprites\king.png")
-kingB = pygame.image.load(r"Sprites\king (1).png")
-horse = pygame.image.load(r"Sprites\horse.png")
-horseB = pygame.image.load(r"Sprites\horse (1).png")
-
-pieces = {"p": [pawn, pawnB], "r": [rook, rookB], "b": [bishop, bishopB],
-          "q": [queen, queenB], "k": [king, kingB], "h": [horse, horseB]}
-
-backGround = pygame.image.load(r"Sprites\woodBackground.jpg")
-
-fontStyle = pygame.font.SysFont("franklingothicmedium", 70, bold = True)
-
+# texts to be shown on screen
 textBlack =     "     BLACK'S MOVE     "
 textWhite =     "     WHITE'S MOVE     "
 textCheck =     "       IN CHECK       "
 textCHECKMATE = "      CHECKMATE!      "
+testNotify =    "    KING IN DANGER !  "
 
-texts = [textBlack, textWhite, textCheck, textCHECKMATE]
+texts = [textBlack, textWhite, textCheck, textCHECKMATE, testNotify]
 
-
-# pieces on board
-boardPieces = [["r", "h", "b", "q", "k", "b", "h", "r"],
-               ["p", "p", "p", "p", "p", "p", "p", "p"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["p", "p", "p", "p", "p", "p", "p", "p"],
-               ["r", "h", "b", "q", "k", "b", "h", "r"]]
-
-boardPieces = [["r", "o", "b", "q", "k", "b", "h", "r"],
-               ["p", "p", "p", "p", "o", "p", "p", "p"],
-               ["o", "o", "o", "o", "o", "o", "o", "o"],
-               ["o", "o", "o", "o", "p", "o", "o", "o"],
-               ["o", "o", "o", "h", "p", "o", "p", "o"],
-               ["o", "o", "h", "o", "o", "o", "o", "o"],
-               ["p", "p", "p", "p", "h", "p", "p", "p"],
-               ["r", "o", "b", "q", "k", "b", "o", "r"]]
-# board to indicate each player
-boardPlayer = [[2, 2, 2, 2, 2, 2, 2, 2],
-               [2, 2, 2, 2, 2, 2, 2, 2],
-               [0, 0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0, 0],
-               [1, 1, 1, 1, 1, 1, 1, 1],
-               [1, 1, 1, 1, 1, 1, 1, 1]]
-
-boardPlayer = [[2, 0, 2, 2, 2, 2, 2, 2],
-               [2, 2, 2, 2, 0, 2, 2, 2],
-               [0, 0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 2, 0, 0, 0],
-               [0, 0, 0, 2, 1, 0, 1, 0],
-               [0, 0, 1, 0, 0, 0, 0, 0],
-               [1, 1, 1, 1, 1, 1, 1, 1],
-               [1, 0, 1, 1, 1, 1, 0, 1]]
-
-boardRects = []  # a board of rects for each tile
-boardMarker = []  # a board with numbers corresponding to the colour of the tile
 boardStart = (64, 32)  # top left corner of board
 tileSize = 64
-borderSize = 4
+borderSize = 4 # size of the border around the board
 
 # colour codes
 white = (255, 255, 255)
@@ -102,14 +48,26 @@ moving = False  # player is in the process of choosing a piece, include animatio
 initialPos = [0, 0]  # initial position of piece picked
 grads = [0, 0]  # y and x speed of the piece in animation
 ignore = None  # holds positon of the piece which is in animation.
-turn = 0
+turn = 0 # 0 means its white's turn, 1 means its black's turn
 inCheck = False
 inCheckMate = False
-pauseTimeMark = 60
-pauseTime = pauseTimeMark
 
-# fills boardMarker and boardRects
-for j in range(8):
+notify = False # if True, notification will be on screen
+notifyTime = 0 # if +ive, notify is True, else, decremented by 1
+notifyTimeMark = 80 # notifyTime resets to this value
+
+pauseTimeMark = 60 # pauseTime resets to this value
+pauseTime = pauseTimeMark # used for the pause after the animation of a move, if +ive, still in pause
+
+# rect for the reset button
+resetRect = pygame.Rect(tileSize * 8 - resetImage.get_width() + boardStart[0] + 45,
+                        tileSize * 8  + boardStart[1] + 15,
+                        resetImage.get_width(), resetImage.get_height())
+
+
+boardRects = []  # a board of Rects for each tile
+boardMarker = []  # a board with numbers corresponding to the colour of the tile
+for j in range(8): # fills boardMarker and boardRects
     row = []
     row1 = []
     for i in range(8):
@@ -119,7 +77,7 @@ for j in range(8):
     boardMarker.append((row1))
 
 
-# draws board
+# draws board using boardMarker
 def drawBoard(boardRects, boardMarker):
     for j in range(8):
         for i in range(8):
@@ -131,7 +89,7 @@ def drawBoard(boardRects, boardMarker):
                 pygame.draw.rect(display, darkGreen, boardRects[j][i])
             elif boardMarker[j][i] == 3:  # tile where cursor has been clicked
                 pygame.draw.rect(display, lightGreen, boardRects[j][i])
-                pygame.draw.rect(display, darkGreen, boardRects[j][i], 1)
+                pygame.draw.rect(display, darkGreen, boardRects[j][i], 1) # border
             elif boardMarker[j][i] == 4:  # tile where the cursor is on
                 pygame.draw.rect(display, lightRed, boardRects[j][i])
 
@@ -139,7 +97,7 @@ def drawBoard(boardRects, boardMarker):
     pygame.draw.rect(display, darkBrown, pygame.Rect(0, 0, tileSize * 8, tileSize * 8), borderSize)
 
 
-# draws chess pieces
+# draws chess pieces on board
 def drawPieces(boardPieces, turn, boardPlayer, ignore):
     for j in range(len(boardPieces)):
         for i in range(len(boardPieces)):
@@ -159,27 +117,37 @@ def drawPieces(boardPieces, turn, boardPlayer, ignore):
                 elif boardPieces[j][i] == "k":
                     display.blit(pieces["k"][temp], [i * tileSize, j * tileSize])
 
-def drawText(texts, fontStyle, displayDim, check, checkmate, turn, textColour, boardStart):
+# draw the text below the board
+def drawText(texts, fontStyle, fontStyle1, displayDim, inCheck, inCheckmate, notify, turn, textColour, boardStart):
+    offsetY = 15
 
-    if check:
-        textStart = [(displayDim[0] / 2 - fontStyle.size(texts[2])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1]]
+    if inCheck:
+        textStart = [(displayDim[0] / 2 - fontStyle.size(texts[2])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1] + offsetY]
         textObj = fontStyle.render(texts[2], 1, textColour)
-    elif checkmate:
-        textStart = [(displayDim[0] / 2 - fontStyle.size(texts[3])[0] / 2) + boardStart[0],displayDim[1] + boardStart[1]]
+    elif inCheckmate:
+        textStart = [(displayDim[0] / 2 - fontStyle.size(texts[3])[0] / 2) + boardStart[0],displayDim[1] + boardStart[1] + offsetY]
         textObj = fontStyle.render(texts[3], 1, textColour)
     else:
         if turn == 0:
-            textStart = [(displayDim[0] / 2 - fontStyle.size(texts[1])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1]]
+            textStart = [(displayDim[0] / 2 - fontStyle.size(texts[1])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1] + offsetY]
             textObj = fontStyle.render(texts[1], 1, textColour)
         else:
-            textStart = [(displayDim[0] / 2 - fontStyle.size(texts[0])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1]]
+            textStart = [(displayDim[0] / 2 - fontStyle.size(texts[0])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1] + offsetY]
             textObj = fontStyle.render(texts[0], 1, textColour)
 
+    if notify:
+        textStart1 = [(displayDim[0] / 2 - fontStyle1.size(texts[4])[0] / 2) + boardStart[0], displayDim[1] + boardStart[1]]
+        textObj1 = fontStyle1.render(texts[4], 1, textColour)
+        screen.blit(textObj1, textStart1)
+
     screen.blit(textObj, textStart)
-    
-    
-# changes the colour indication for the tile where the cursor is on
-def cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click, tilePos):
+    screen.blit(resetImage, resetRect)
+
+
+# changes the value of the appropriate element in boardMarker
+# different values in boardMarker makes the tile different colours
+# check drawBoard() to find which number corresponds to which colour
+def cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, boardPieces, click, tilePos):
     mx = loc[0] - boardStart[0]
     my = loc[1] - boardStart[1]
     global moving
@@ -188,35 +156,55 @@ def cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click, tilePos):
         tilePos = [0, 0]
 
     if not moving:
-        for j in range(8):  # resets the colour marker for all tiles
+
+        # resets the boardMarker for all tiles, resets colour
+        for j in range(8):
             for i in range(8):
                 boardMarker[j][i] = (i + j) % 2
 
+        # finds the tile the cursor is on
         for j in range(0, tileSize * 8, tileSize):
             if my >= j and my <= j + tileSize:
                 for i in range(0, tileSize * 8, tileSize):
                     if mx >= i and mx <= i + tileSize:
-                        if click == 0:
 
+                        if click == 0: # if not being clicked
                             boardMarker[j // tileSize][i // tileSize] = 2  # makes tiles dark green
-                        elif click == 1:
-                            if boardPlayer[j // tileSize][i // tileSize] == 1:
+
+                        elif click == 1: # if tile being clicked
+                            if boardPlayer[j // tileSize][i // tileSize] == 1: # has to click a player piece
                                 moving = True
+                                tilePos = [j, i] # pos of tile being clicked
                                 boardMarker[j // tileSize][i // tileSize] = 3  # makes tiles light green
-                                tilePos = [j, i]
+                                # changes the boardMarker appropriately to show where player can move to
                                 boardMarker = moveOption(boardPieces, boardMarker, boardPlayer,
                                                          (j // tileSize, i // tileSize), False)
 
     return boardMarker, tilePos
 
+# reset appropriate variable to restart game
+def resetButton(boardPieces, boardPlayer, boardMarker, click, loc, turn, inCheck, inCheckmate):
+    mx , my = loc[0], loc[1]
 
+    if click == 1:
+        if pygame.Rect.collidepoint(resetRect, [mx, my]):
+            boardPieces = copy.deepcopy(boardPiecesReset)
+            boardPlayer = copy.deepcopy(boardPlayerReset)
+            boardMarker = resetMarker()
+            turn = 0
+            inCheck = False
+            inCheckmate = False
+
+    return boardPieces, boardPlayer, boardMarker, turn, inCheck, inCheckmate
+
+# gives a number depending on whether the tile pos in enemy, team, empty or outOfBound
 def moveValid(tilePos, boardPlayer, OppDir):
+
     if tilePos[0] < 0 or tilePos[0] > 7:
         return 1  # out of the board
     if tilePos[1] < 0 or tilePos[1] > 7:
         return 1  # out of the board
     if not OppDir:
-
         if boardPlayer[tilePos[0]][tilePos[1]] == 2:
             return 2  # enemy piece
         if boardPlayer[tilePos[0]][tilePos[1]] == 1:
@@ -227,13 +215,12 @@ def moveValid(tilePos, boardPlayer, OppDir):
         if boardPlayer[tilePos[0]][tilePos[1]] == 2:
             return 3  # same team piece
 
-    return 0
+    return 0 # empty space
 
 
-# changes the tiles where the horse can move to 3 or 4. 3 means empty tile. 4 is enemy tile
-def rookOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
+# changes the appropriate elements in boardMarker to show the options of where the horse can move
+def rookOption(boardMarker, boardPlayer, tilePos, OppDir):
     j, i = tilePos
-    piece = boardPieces[j][i]
 
     for k in [-1, 1]:
         c = 0
@@ -255,10 +242,9 @@ def rookOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
     return boardMarker
 
 
-# changes the tiles where the bishop can move to 3 or 4. 3 means empty tile. 4 is enemy tile
-def bishopOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
+# changes the appropriate elements in boardMarker to show the options of where the bishop can move
+def bishopOption(boardMarker, boardPlayer, tilePos, OppDir):
     j, i = tilePos
-    piece = boardPieces[j][i]
 
     for k in [-1, 1]:
         c = 0
@@ -286,9 +272,7 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
     j, i = tilePos
     piece = boardPieces[j][i]
 
-
-
-    if piece == "p":
+    if piece == "p": # pawn
         if not OppDir:
             if moveValid([j - 1, i], boardPlayer, OppDir) == 0:
                 boardMarker[j - 1][i] = 3
@@ -297,7 +281,8 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
             if moveValid([j - 1, i + 1], boardPlayer, OppDir) == 2:
                 boardMarker[j - 1][i + 1] = 4
             if j == 6:
-                if moveValid([j - 2, i], boardPlayer, OppDir) == 0:
+                if moveValid([j - 2, i], boardPlayer, OppDir) == 0 \
+                        and moveValid([j - 1, i], boardPlayer, OppDir) == 0:
                     boardMarker[j - 2][i] = 3
         else:
 
@@ -308,16 +293,17 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
             if moveValid([j + 1, i - 1], boardPlayer, OppDir) == 2:
                 boardMarker[j + 1][i - 1] = 4
             if j == 1:
-                if moveValid([j + 2, i], boardPlayer, OppDir) == 0:
+                if moveValid([j + 2, i], boardPlayer, OppDir) == 0 \
+                        and moveValid([j + 1, i], boardPlayer, OppDir) == 0:
                     boardMarker[j + 2][i] = 3
 
-    elif piece == "r":
-        rookOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
+    elif piece == "r": # rook
+        rookOption(boardMarker, boardPlayer, tilePos, OppDir)
 
-    elif piece == "b":
-        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
+    elif piece == "b": # bishop
+        bishopOption(boardMarker, boardPlayer, tilePos, OppDir)
 
-    elif piece == "h":
+    elif piece == "h": # horse
         for k in [-1, 1]:
             for c in [-1, 1]:
                 if moveValid([j + 2 * k, i + c], boardPlayer, OppDir) == 0:
@@ -332,11 +318,11 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
                 elif moveValid([j + c, i + 2 * k], boardPlayer, OppDir) == 2:
                     boardMarker[j + c][i + 2 * k] = 4
 
-    elif piece == "q":
-        rookOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
-        bishopOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir)
+    elif piece == "q": # queen
+        rookOption(boardMarker, boardPlayer, tilePos, OppDir)
+        bishopOption(boardMarker, boardPlayer, tilePos, OppDir)
 
-    elif piece == "k":
+    elif piece == "k": # king
         for k in [0, 1]:
             if moveValid([j - 1, i + k], boardPlayer, OppDir) == 0:
                 boardMarker[j - 1][i + k] = 3
@@ -360,10 +346,13 @@ def moveOption(boardPieces, boardMarker, boardPlayer, tilePos, OppDir):
 
     return boardMarker
 
+
+# mimics turning the board over to other player.
 def flip(boardPlayer, boardPieces, boardMarker):
     boards = []
     for board in [boardPlayer, boardPieces, boardMarker]:
 
+        # makes the team being played always 1 in boardPlayer, opponent will be 2
         if board == boardPlayer:
             for j in range(8):
                 for i in range(8):
@@ -379,41 +368,33 @@ def flip(boardPlayer, boardPieces, boardMarker):
     return boards[0], boards[1], boards[2]
 
 
-def isKingCheck(boardPieces, boardPlayer, boardMarker):
-
-    boardMarkerEmpty = resetMarker()
-
+# checks whether king is in check by looking at all the move options for the all opponent pieces
+# if any opponent piece can kill king, the return True
+def isKingCheck(boardPieces, boardPlayer):
     kingPos = []
-    boardMarkerCopy = copy.deepcopy(boardMarker)
 
-
-
-    for j in range(8):
+    for j in range(8): # finds the position of team king
         for i in range(8):
             if boardPieces[j][i] == "k" and boardPlayer[j][i] == 1:
                 kingPos = [j, i]
 
-    for j in range(8):
+    for j in range(8): # goes through all enemy pieces
         for i in range(8):
             if boardPlayer[j][i] == 2:
-                piece = boardPieces[j][i]
-                boardMarker = copy.deepcopy(boardMarkerEmpty)
-                boardMarker = moveOption(boardPieces, boardMarker, boardPlayer, (j, i), True)
+                boardMark = resetMarker() # resets boardMarker
+                boardMark = moveOption(boardPieces, boardMark, boardPlayer, (j, i), True) # shows options for that piece
 
-                if boardMarker[kingPos[0]][kingPos[1]] == 4:
-                    boardMarker = boardMarkerCopy
-                    #boardPlayer, boardPieces, boardMarker = flip(boardPlayer, boardPieces, boardMarker)
+                if boardMark[kingPos[0]][kingPos[1]] == 4: # if king can be attacked
                     return True
 
-    boardMarker = boardMarkerCopy
 
     return False
 
 
-def kingInDanger(initialPos, finalPos, boardPlayer, boardPieces, boardMarker):
+# shows whether next move will make own king in check
+def kingInDanger(initialPos, finalPos, boardPlayer, boardPieces):
     boardPieces1 = copy.deepcopy(boardPieces)
     boardPlayer1 = copy.deepcopy(boardPlayer)
-    boardMarker1 = resetMarker()
 
     boardPieces1[finalPos[0]][finalPos[1]] = boardPieces1[initialPos[0]][initialPos[1]]  # moves piece to chosen position
     boardPieces1[initialPos[0]][initialPos[1]] = "o"  # previous position is now empty
@@ -421,12 +402,12 @@ def kingInDanger(initialPos, finalPos, boardPlayer, boardPieces, boardMarker):
     boardPlayer1[finalPos[0]][finalPos[1]] = 1  # new position is occupied by team piece
     boardPlayer1[initialPos[0]][initialPos[1]] = 0  # previous position is now empty
 
-    if isKingCheck(boardPieces1, boardPlayer1, boardMarker):
+    if isKingCheck(boardPieces1, boardPlayer1):
         return True
     else:
         return False
 
-
+# 1 is black, 0 is white
 def resetMarker():
     boardMarker1 = []
     for j in range(8):
@@ -437,43 +418,38 @@ def resetMarker():
     return boardMarker1
 
 
+# checks whether player is in checkmate, only check when player in check
+# check all possible moves player can make, if no move allow player to get out of check, then checkmate
 def isCheckMate(boardPlayer, boardPieces):
-    boardMarker1 = resetMarker()
-    boardPieces1 = copy.deepcopy(boardPieces)
-    boardPlayer1 = copy.deepcopy(boardPlayer)
 
-    for j in range(8):
+    for j in range(8): # finds each team piece
         for i in range(8):
             if boardPlayer[j][i] == 1:
-                initialPos = [j, i]
+                initialPos = [j, i] # pos of selected team piece
 
                 boardMarker1 = resetMarker()
                 boardPieces1 = copy.deepcopy(boardPieces)
                 boardPlayer1 = copy.deepcopy(boardPlayer)
-
+                # shows all possible moves for selected piece
                 boardMarker1 = moveOption(boardPieces, boardMarker1, boardPlayer, (j, i), False)
-                for y in range(8):
+
+                for y in range(8): # selects a possible pos where selected piece can move to
                     for x in range(8):
                         finalPos = [y, x]
+
+                        # for every possible move (empty or enemy space) and not a pos of itself
                         if boardMarker1[y][x] in [3, 4] and [y, x] != [j, x]:
+
                             boardPieces1[finalPos[0]][finalPos[1]] = boardPieces1[initialPos[0]][initialPos[1]]  # moves piece to chosen position
                             boardPieces1[initialPos[0]][initialPos[1]] = "o"  # previous position is now empty
 
                             boardPlayer1[finalPos[0]][finalPos[1]] = 1  # new position is occupied by team piece
                             boardPlayer1[initialPos[0]][initialPos[1]] = 0  # previous position is now empty
 
-                            if not isKingCheck(boardPieces1, boardPlayer1, boardMarker1):
+                            if not isKingCheck(boardPieces1, boardPlayer1): # checks if king is not in check
                                 return False
 
-
-
-    return True
-
-
-
-
-
-
+    return True # if no moves can stop king being in check, then return True
 
 
 # prints out the different boards for debugging purposes
@@ -508,49 +484,56 @@ while True:
             if event.button == 1:  # left click
                 click = 1
 
-    """if rotating:
-        angle += 5
-        if angle >= 180:
-            rotating = False"""
-
     ignore = None
-    boardMarker, initialPos = cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, click, initialPos)
+    boardMarker, initialPos = cursor(loc, tileSize, boardStart, boardMarker, boardPlayer, boardPieces, click, initialPos)
     drawBoard(boardRects, boardMarker)
 
     if moving:
 
-        # grads = [0,0]
         mx = loc[0] - boardStart[0]
         my = loc[1] - boardStart[1]
 
+        if notifyTime > 0:
+            notify = True
+            notifyTime -= 1
+        else:
+            notify = False
+
         if click == 1:
+
+            # if green/red (3/4) tile is clicked from move options
             for j in range(0, tileSize * 8, tileSize):
                 if my >= j and my <= j + tileSize:
                     for i in range(0, tileSize * 8, tileSize):
                         if mx >= i and mx <= i + tileSize:
-                            if boardMarker[j // tileSize][i // tileSize] in [3, 4] and [j,i] != initialPos:  # when valid move is clicked, cannot be itself
-                                finalPos = [j, i]  # pice is being moved to
 
-                                if not kingInDanger([initialPos[0] // tileSize, initialPos[1] // tileSize], [finalPos[0] //tileSize, finalPos[1] // tileSize], boardPlayer, boardPieces, boardMarker):
+                            # when valid move is clicked, cannot be itself
+                            if boardMarker[j // tileSize][i // tileSize] in [3, 4] and [j,i] != initialPos:
+                                finalPos = [j, i]  # piece is being moved to
+
+                                # if move doesnt make own king in danger:
+                                if not kingInDanger([initialPos[0] // tileSize, initialPos[1] // tileSize],
+                                                    [finalPos[0] //tileSize, finalPos[1] // tileSize],
+                                                    boardPlayer, boardPieces):
+
                                     animation = True
                                     grads = [(j - initialPos[0]), (i - initialPos[1])]  # y and x speed of animation
                                 else:
-                                    print("KING CANNOT MOVE THERE")
+                                    # print("KING CANNOT MOVE THERE")
+                                    notifyTime = notifyTimeMark # notify player that ling will be in danger
 
+                            # if player wants to pick another piece
                             elif boardMarker[j // tileSize][i // tileSize] in [0, 1]:
                                 moving = False
-
-
 
         if animation:
             piece = boardPieces[initialPos[0] // tileSize][initialPos[1] // tileSize]  # piece being moved
             maxx = max(abs(grads[0]), abs(grads[1]))
             grads = [grads[0] / maxx * 1.5, grads[1] / maxx * 1.5]
+            done = [False, False]
 
             tempJI[0] += grads[0]  # increases displacement
             tempJI[1] += grads[1]  # increases displacement
-
-            done = [False, False]
 
             # when animation piece has reached correct destination, done will equal [True, True]
             if grads[0] >= 0:
@@ -567,66 +550,61 @@ while True:
                 if initialPos[1] + tempJI[1] <= finalPos[1]:
                     done[1] = True
 
-            if done == [True, True]:
+            if done == [True, True]: # when animation is complete
 
-                initialPos = [initialPos[0] // tileSize, initialPos[1] // tileSize]
-                finalPos = [finalPos[0] // tileSize, finalPos[1] // tileSize]
+                # changes appropriate elements in boards, that correspond to the move that took place
+                if pauseTime == pauseTimeMark:
+                    initialPos = [initialPos[0] // tileSize, initialPos[1] // tileSize]
+                    finalPos = [finalPos[0] // tileSize, finalPos[1] // tileSize]
 
-                boardPieces[finalPos[0]][finalPos[1]] = boardPieces[initialPos[0]][
-                    initialPos[1]]  # moves piece to chosen position
-                boardPieces[initialPos[0]][initialPos[1]] = "o"  # previous position is now empty
+                    boardPieces[finalPos[0]][finalPos[1]] = boardPieces[initialPos[0]][
+                        initialPos[1]]  # moves piece to chosen position
+                    boardPieces[initialPos[0]][initialPos[1]] = "o"  # previous position is now empty
 
-                boardPlayer[finalPos[0]][finalPos[1]] = 1  # new position is occupied by team piece
-                boardPlayer[initialPos[0]][initialPos[1]] = 0  # previous position is now empty
+                    boardPlayer[finalPos[0]][finalPos[1]] = 1  # new position is occupied by team piece
+                    boardPlayer[initialPos[0]][initialPos[1]] = 0  # previous position is now empty
 
                 if pauseTime <= 0:
                     moving = False
                     animation = False
-                    rotating = True
                     tempJI = [0, 0]
                     pauseTime = pauseTimeMark
-
-
-
                     initialPos = [0, 0]
                     finalPos = [0, 0]
-
                     turn = (turn + 1) % 2
+                    inCheck, inCheckMate = False, False
 
+                    # 'flips' the boards, so other player can play
                     boardPlayer, boardPieces, boardMarker = \
                     flip(boardPlayer, boardPieces, boardMarker)
 
-
-                    inCheck, inCheckMate = False, False
-                    if isKingCheck(boardPieces, boardPlayer, boardMarker):
+                    # checks whether player in check/checkmate
+                    if isKingCheck(boardPieces, boardPlayer):
                         if isCheckMate(boardPlayer, boardPieces):
                             inCheckMate = True
-                            print("CHECKMATE")
+                            # print("CHECKMATE")
                         else:
                             inCheck = True
-                            print("JUST CHECKK")
+                            # print("JUST CHECKK")
                 else:
                     pauseTime -= 1
-
 
                 #debug(boardPieces, boardMarker, boardPlayer)  # prints boards
 
             else:
-                ignore = [initialPos[0] // tileSize,
-                          initialPos[1] // tileSize]  # the piece being moved should be ignored
-                display.blit(pieces[piece][turn], [initialPos[1] + tempJI[1],
-                                             initialPos[0] + tempJI[0]])  # display moving piece with displacement
+                # the piece in the initial place being moved should be ignored while the animated image is being shown
+                ignore = [initialPos[0] // tileSize, initialPos[1] // tileSize]
+                # display moving piece with displacement (tempJI)
+                display.blit(pieces[piece][turn], [initialPos[1] + tempJI[1], initialPos[0] + tempJI[0]])
 
+    boardPieces, boardPlayer, boardMarker, turn, inCheck, inCheckMate = \
+        resetButton(boardPieces, boardPlayer, boardMarker, click, loc, turn, inCheck, inCheckMate)
     drawPieces(boardPieces, turn, boardPlayer, ignore)
-    drawText(texts, fontStyle, DISPLAY_SIZE, inCheck, inCheckMate, turn, darkBrown, boardStart)
+    drawText(texts, fontStyle, fontStyle1, DISPLAY_SIZE, inCheck, inCheckMate, notify, turn, darkBrown, boardStart)
 
-    """if rotating:
-        displayCopy = pygame.transform.rotate(display, angle)
-        screen.blit(displayCopy, (175 - int(displayCopy.get_width() / 2), 150 - int(displayCopy.get_height() / 2)))
-    else:"""
 
-    #mainDisplay = pygame.transform.scale(display, WINDOW_SIZE)
-    screen.blit(display, (boardStart[0], boardStart[1]))
-
+    screen.blit(display, (boardStart[0], boardStart[1])) # draws everything onto screen
     pygame.display.update()  # update display
     clock.tick(60)  # set frame rate
+
+# Made by Avin Lanson
