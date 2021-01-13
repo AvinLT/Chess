@@ -35,11 +35,12 @@ borderSize = 4 # size of the border around the board
 # colour codes
 white = (255, 255, 255)
 black = (0, 0, 0)
-brown = (213, 157, 0)
-darkBrown = (142, 90, 0)
-cream = (252, 214, 112)
-lightGreen = (174, 255, 144)
-darkGreen = (61, 233, 71)
+brown = (220, 155, 60)
+darkBrown = (145, 85, 0)
+cream = (255, 221, 143)
+cream1 = (250, 183, 92)
+lightGreen = (167, 253, 137)
+darkGreen = (59, 236, 58)
 lightRed = (255, 84, 84)
 
 tempJI = [0, 0]  # displacement of the piece for original position when moving
@@ -470,7 +471,7 @@ def debug(boardPieces, boardMarker, boardPlayer):
 while True:
 
     display.fill((0, 0, 0))  # makes display black
-    screen.fill((255, 200, 90))
+    screen.fill(cream1)
 
     mx, my = pygame.mouse.get_pos()  # gets cursor co-ords
     loc = [mx, my]
